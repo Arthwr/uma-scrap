@@ -1,4 +1,4 @@
-Uma-Scrap
+# Uma-Scrap
 
 Small Go scraper for **Umamusume Pretty Derby Global** using [Colly](https://github.com/gocolly/colly).
 
