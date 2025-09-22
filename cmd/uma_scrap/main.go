@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Writting JSON file to %s ...\n", config.DefEventsFilename)
+	fmt.Printf("Writing JSON file to %s ...\n", config.DefEventsFilename)
 	if err := scr.Store().ExportJSON(config.DefOutputDir, config.DefEventsFilename); err != nil {
 		log.Fatal("Failed to write JSON: ", err)
 	}
