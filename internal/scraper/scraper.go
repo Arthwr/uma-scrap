@@ -8,7 +8,6 @@ import (
 	"github.com/arthwr/uma-scrap/internal/config"
 	"github.com/arthwr/uma-scrap/internal/models"
 	"github.com/gocolly/colly"
-	"github.com/gocolly/colly/debug"
 )
 
 type Scraper struct {
@@ -21,7 +20,6 @@ func NewScraper() *Scraper {
 		colly.AllowedDomains(config.Domain),
 		colly.MaxDepth(config.MaxDepth),
 		colly.Async(config.Async),
-		colly.Debugger(&debug.LogDebugger{}),
 	)
 
 	c.Limit(&colly.LimitRule{
@@ -46,14 +44,6 @@ func (s *Scraper) RegisterHandlers() {
 				return
 			}
 
-			log.Printf(
-				"Name: %-20s | Type: %-8s | Event: %-30s | URL: %s",
-				event.UmaName,
-				event.Type.String(),
-				event.EventName,
-				event.URL,
-			)
-
 			s.store.AddEvent(event)
 		})
 	})
@@ -69,4 +59,8 @@ func (s *Scraper) Run(startURL string) error {
 	}
 	s.collector.Wait()
 	return nil
+}
+
+func (s *Scraper) Store() *models.EventStore {
+	return s.store
 }

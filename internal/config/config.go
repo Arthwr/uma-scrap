@@ -11,3 +11,8 @@ const (
 	RequestDelay       = 1
 	RequestRandomDelay = 4
 )
+
+const (
+	DefOutputDir      = "internal/output"
+	DefEventsFilename = "events.json"
+)

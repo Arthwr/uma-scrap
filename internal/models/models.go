@@ -1,11 +1,13 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 )
 
-// --- ENUMS / CONSTANTS ---
 type EventType int
 
 const (
@@ -14,7 +16,6 @@ const (
 	Scenario
 )
 
-// --- ENUM METHODS ---
 func (et EventType) String() string {
 	switch et {
 	case Trainee:
@@ -26,6 +27,10 @@ func (et EventType) String() string {
 	default:
 		return "Unknown"
 	}
+}
+
+func (et EventType) MarshalText() ([]byte, error) {
+	return []byte(et.String()), nil
 }
 
 func EventTypeFromString(s string) (EventType, error) {
@@ -41,7 +46,6 @@ func EventTypeFromString(s string) (EventType, error) {
 	}
 }
 
-// --- DOMAIN STRUCTS ---
 type Event struct {
 	UmaName   string
 	EventName string
@@ -49,7 +53,6 @@ type Event struct {
 	Type      EventType
 }
 
-// --- AGGREGATE STORE ---
 type EventStore struct {
 	mux    sync.Mutex
 	Events map[EventType]map[string][]Event
@@ -72,4 +75,31 @@ func (s *EventStore) AddEvent(e Event) {
 		s.Events[e.Type] = make(map[string][]Event)
 	}
 	s.Events[e.Type][e.UmaName] = append(s.Events[e.Type][e.UmaName], e)
+}
+
+func (s *EventStore) ExportJSON(dir, filename string) error {
+	if dir == "" {
+		return fmt.Errorf("directory path cannot be empty")
+	}
+	if filename == "" {
+		return fmt.Errorf("filename cannot be empty")
+	}
+	if filepath.Ext(filename) != ".json" {
+		return fmt.Errorf("filename must have a .json extension")
+	}
+	if err := os.MkdirAll(dir, os.FileMode(0755)); err != nil {
+		return err
+	}
+
+	path := filepath.Join(dir, filename)
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	enc := json.NewEncoder(file)
+	enc.SetIndent("", "  ")
+	return enc.Encode(s.Events)
 }
