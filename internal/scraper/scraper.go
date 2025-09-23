@@ -17,16 +17,16 @@ type Scraper struct {
 
 func NewScraper() *Scraper {
 	c := colly.NewCollector(
-		colly.AllowedDomains(config.Domain),
-		colly.MaxDepth(config.MaxDepth),
-		colly.Async(config.Async),
+		colly.AllowedDomains(config.DOMAIN),
+		colly.MaxDepth(config.MAX_DEPTH),
+		colly.Async(config.ASYNC),
 	)
 
 	c.Limit(&colly.LimitRule{
-		DomainGlob:  config.Glob,
-		Parallelism: config.Workers,
-		Delay:       config.RequestDelay * time.Second,
-		RandomDelay: config.RequestRandomDelay * time.Second,
+		DomainGlob:  config.GLOB,
+		Parallelism: config.WORKERS,
+		Delay:       config.REQUEST_DELAY * time.Second,
+		RandomDelay: config.REQUEST_RANDOM_DELAY * time.Second,
 	})
 
 	return &Scraper{

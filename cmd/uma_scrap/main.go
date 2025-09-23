@@ -9,18 +9,23 @@ import (
 )
 
 func main() {
-	fmt.Printf("Starting parser at %s ...\n", config.BaseURL)
+	fmt.Printf("Starting parser at %s ...\n", config.BASE_URL)
 
 	scr := scraper.NewScraper()
 	scr.RegisterHandlers()
 
-	if err := scr.Run(config.BaseURL + config.EventsURL); err != nil {
+	if err := scr.Run(config.BASE_URL + config.EVENTS_URL); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Writing JSON file to %s ...\n", config.DefEventsFilename)
-	if err := scr.Store().ExportJSON(config.DefOutputDir, config.DefEventsFilename); err != nil {
+	fmt.Printf("Writing JSON file to %s ...\n", config.DEF_OUTPUT_DIR)
+	if err := scr.Store().ExportJSON(config.DEF_OUTPUT_DIR); err != nil {
 		log.Fatal("Failed to write JSON: ", err)
 	}
+
+	for key, count := range scr.Store().Counts {
+		fmt.Printf("%s events: %d\n", key.String(), count)
+	}
+
 	fmt.Println("Job done!")
 }

@@ -7,6 +7,9 @@ import (
 
 func parseEventRow(tr *colly.HTMLElement) (models.Event, error) {
 	umaName := tr.ChildText("td:nth-child(1) a")
+	if umaName == "" {
+		umaName = tr.ChildText("td:nth-child(1) div")
+	}
 	eventTypeStr := tr.ChildText("td:nth-child(2)")
 	eventName := tr.ChildText("td:nth-child(3) a")
 	eventURL := tr.ChildAttr("td:nth-child(3) a", "href")
