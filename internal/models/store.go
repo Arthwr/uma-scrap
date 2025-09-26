@@ -8,63 +8,20 @@ import (
 	"github.com/arthwr/uma-scrap/internal/config"
 )
 
-type EventType int
-
-const (
-	Trainee EventType = iota
-	Support
-	Scenario
-)
-
-func (et EventType) String() string {
-	switch et {
-	case Trainee:
-		return "Trainee"
-	case Support:
-		return "Support"
-	case Scenario:
-		return "Scenario"
-	default:
-		return "Unknown"
-	}
-}
-
-func (et EventType) MarshalText() ([]byte, error) {
-	return []byte(et.String()), nil
-}
-
-func EventTypeFromString(s string) (EventType, error) {
-	switch s {
-	case "Trainee":
-		return Trainee, nil
-	case "Support":
-		return Support, nil
-	case "Scenario":
-		return Scenario, nil
-	default:
-		return -1, fmt.Errorf("unknown EventType: %s", s)
-	}
-}
-
-type Event struct {
-	UmaName   string
-	EventName string
-	URL       string
-	Type      EventType
-}
-
 type EventStore struct {
 	mux    sync.Mutex
 	Events map[EventType]map[string][]Event
 	Counts map[EventType]int
 }
 
+type ExportedData struct {
+	Counts map[EventType]int                `json:"counts"`
+	Events map[EventType]map[string][]Event `json:"events"`
+}
+
 func NewEventStore() *EventStore {
 	return &EventStore{
-		Events: map[EventType]map[string][]Event{
-			Trainee: make(map[string][]Event),
-			Support: make(map[string][]Event),
-		},
+		Events: make(map[EventType]map[string][]Event),
 		Counts: make(map[EventType]int),
 	}
 }
@@ -93,9 +50,26 @@ func (s *EventStore) ExportJSON(dir string) error {
 	filename := makeFilename()
 	path := filepath.Join(dir, filename)
 
-	if err := writeJSON(path, s.Events); err != nil {
+	data := ExportedData{
+		Counts: s.Counts,
+		Events: s.Events,
+	}
+
+	if err := writeJSON(path, data); err != nil {
 		return err
 	}
 
 	return cleanupOldFiles(dir, config.DEF_EVENTS_FILENAME_PATTERN, config.MAX_STORAGE_KEEP)
+}
+
+func (s *EventStore) IsEmpty() bool {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	for _, count := range s.Counts {
+		if count > 0 {
+			return false
+		}
+	}
+	return true
 }

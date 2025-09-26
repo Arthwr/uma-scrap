@@ -51,6 +51,14 @@ func (s *Scraper) RegisterHandlers() {
 	s.collector.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting: ", r.URL.String())
 	})
+
+	s.collector.OnResponse(func(r *colly.Response) {
+		fmt.Printf("Response from %s: %d\n", r.Request.URL, r.StatusCode)
+	})
+
+	s.collector.OnError(func(r *colly.Response, err error) {
+		fmt.Printf("Error visiting %s: %v\n", r.Request.URL, err)
+	})
 }
 
 func (s *Scraper) Run(startURL string) error {
@@ -58,6 +66,11 @@ func (s *Scraper) Run(startURL string) error {
 		return err
 	}
 	s.collector.Wait()
+
+	if s.store.IsEmpty() {
+		return fmt.Errorf("no events were found at %s - check the URL and HTML selectors", startURL)
+	}
+
 	return nil
 }
 
