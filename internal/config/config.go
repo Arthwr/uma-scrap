@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	DEF_OUTPUT_DIR              = "internal/output"
+	DEF_OUTPUT_DIR              = "output"
 	DEF_EVENTS_FILENAME_PATTERN = "-events.json"
 	MAX_STORAGE_KEEP            = 3
 )
