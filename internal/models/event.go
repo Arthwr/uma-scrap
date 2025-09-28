@@ -46,3 +46,12 @@ type Event struct {
 	URL       string    `json:"url"`
 	Type      EventType `json:"type"`
 }
+
+type EventDetails struct {
+	Outcomes []Choice `json:"choices"`
+}
+
+type Choice struct {
+	Label  string `json:"label,omitempty"`
+	Reward string `json:"reward"`
+}

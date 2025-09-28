@@ -12,11 +12,15 @@ func RunScraper() error {
 	fmt.Printf("Starting parser at %s ...\n", config.BASE_URL)
 
 	scr := scraper.NewScraper()
-	scr.RegisterHandlers()
 
 	targetURL := config.BASE_URL + config.EVENTS_URL
-	if err := scr.Run(targetURL); err != nil {
-		return fmt.Errorf("scraping failed: %w", err)
+
+	if err := scr.ScrapeEventList(targetURL); err != nil {
+		return fmt.Errorf("failed scraping event list: %w", err)
+	}
+
+	if err := scr.ScrapeEventDetails(); err != nil {
+		return fmt.Errorf("failed scraping event details: %w", err)
 	}
 
 	fmt.Printf("Writing JSON file to %s ...\n", config.DEF_OUTPUT_DIR)

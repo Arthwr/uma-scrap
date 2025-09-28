@@ -9,20 +9,23 @@ import (
 )
 
 type EventStore struct {
-	mux    sync.Mutex
-	Events map[EventType]map[string][]Event
-	Counts map[EventType]int
+	mux        sync.Mutex
+	Counts     map[EventType]int
+	Events     map[EventType]map[string][]Event
+	Collection map[string]EventDetails
 }
 
 type ExportedData struct {
-	Counts map[EventType]int                `json:"counts"`
-	Events map[EventType]map[string][]Event `json:"events"`
+	Counts     map[EventType]int                `json:"counts"`
+	Events     map[EventType]map[string][]Event `json:"events"`
+	Collection map[string]EventDetails          `json:"collection"`
 }
 
 func NewEventStore() *EventStore {
 	return &EventStore{
-		Events: make(map[EventType]map[string][]Event),
-		Counts: make(map[EventType]int),
+		Events:     make(map[EventType]map[string][]Event),
+		Counts:     make(map[EventType]int),
+		Collection: make(map[string]EventDetails),
 	}
 }
 
@@ -38,6 +41,13 @@ func (s *EventStore) AddEvent(e Event) {
 	s.Counts[e.Type]++
 }
 
+func (s *EventStore) AddEventDetail(eventName string, eventDetails EventDetails) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	s.Collection[eventName] = eventDetails
+}
+
 func (s *EventStore) ExportJSON(dir string) error {
 	if dir == "" {
 		return fmt.Errorf("directory path cannot be empty")
@@ -51,8 +61,9 @@ func (s *EventStore) ExportJSON(dir string) error {
 	path := filepath.Join(dir, filename)
 
 	data := ExportedData{
-		Counts: s.Counts,
-		Events: s.Events,
+		Counts:     s.Counts,
+		Events:     s.Events,
+		Collection: s.Collection,
 	}
 
 	if err := writeJSON(path, data); err != nil {
@@ -60,16 +71,4 @@ func (s *EventStore) ExportJSON(dir string) error {
 	}
 
 	return cleanupOldFiles(dir, config.DEF_EVENTS_FILENAME_PATTERN, config.MAX_STORAGE_KEEP)
-}
-
-func (s *EventStore) IsEmpty() bool {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	for _, count := range s.Counts {
-		if count > 0 {
-			return false
-		}
-	}
-	return true
 }
