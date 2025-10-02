@@ -2,10 +2,12 @@ package scraper
 
 const (
 	SelectorEventsTable = "div.scroll--table.table-header--fixed > table > tbody"
-	SelectorEventHeader = "h3"
+	SelectorEventHeader = "h3#hm_1"
 	SelectorEventTable  = "table.a-table.a-table"
 )
 
 const (
-	EventHeaderText = "Choices and Outcomes"
+	EventChoiceHeader               = "Choices and Outcomes"
+	EventNonChoiceHeader            = "No-Choice Event"
+	EventNonChoiceAndOutcomesHeader = "No Choices and Outcomes"
 )

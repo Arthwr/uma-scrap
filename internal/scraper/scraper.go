@@ -11,6 +11,11 @@ import (
 	"github.com/gocolly/colly"
 )
 
+type EventLink struct {
+	Name string
+	URL  string
+}
+
 type Scraper struct {
 	jobMutex      sync.Mutex
 	collector     *colly.Collector
@@ -18,12 +23,6 @@ type Scraper struct {
 	eventURLs     []EventLink
 	completedJobs int
 	totalJobs     int
-	lastUpdate    time.Time
-}
-
-type EventLink struct {
-	Name string
-	URL  string
 }
 
 func NewScraper() *Scraper {
@@ -31,6 +30,24 @@ func NewScraper() *Scraper {
 		collector: createCollector(),
 		store:     models.NewEventStore(),
 	}
+}
+
+func createCollector() *colly.Collector {
+	c := colly.NewCollector(
+		colly.AllowedDomains(config.DOMAIN),
+		colly.MaxDepth(config.MAX_DEPTH),
+		colly.Async(config.ASYNC),
+		colly.AllowURLRevisit(),
+	)
+
+	c.Limit(&colly.LimitRule{
+		DomainGlob:  config.GLOB,
+		Parallelism: config.WORKERS,
+		Delay:       config.REQUEST_DELAY * time.Second,
+		RandomDelay: config.REQUEST_RANDOM_DELAY * time.Second,
+	})
+
+	return c
 }
 
 func (s *Scraper) Store() *models.EventStore {
@@ -83,7 +100,7 @@ func (s *Scraper) ScrapeEventDetails() error {
 	}
 
 	duration := time.Since(startTime)
-	fmt.Printf("\rCompleted %d/%d jobs in %v\n",
+	fmt.Printf("\rCompleted %d/%d jobs in %v\033[K\n",
 		s.completedJobs, s.totalJobs, duration.Truncate(time.Second))
 
 	return nil
@@ -154,12 +171,6 @@ func (s *Scraper) incrementAndShowProgress(eventName string, outcomes int) {
 
 	s.completedJobs++
 
-	now := time.Now()
-	if now.Sub(s.lastUpdate) < 100*time.Millisecond && s.completedJobs < s.totalJobs {
-		return
-	}
-	s.lastUpdate = now
-
 	var message string
 	if eventName != "" && outcomes > 0 {
 		message = fmt.Sprintf("[%d/%d] Latest: %s (%d outcomes)",
@@ -169,28 +180,9 @@ func (s *Scraper) incrementAndShowProgress(eventName string, outcomes int) {
 			s.completedJobs, s.totalJobs)
 	}
 
-	fmt.Printf("\r%-120s\r%s", "", message)
-
+	fmt.Printf("\r%s\033[K", message)
 }
 
 func (s *Scraper) clearHandlers() {
 	s.collector = createCollector()
-}
-
-func createCollector() *colly.Collector {
-	c := colly.NewCollector(
-		colly.AllowedDomains(config.DOMAIN),
-		colly.MaxDepth(config.MAX_DEPTH),
-		colly.Async(config.ASYNC),
-		colly.AllowURLRevisit(),
-	)
-
-	c.Limit(&colly.LimitRule{
-		DomainGlob:  config.GLOB,
-		Parallelism: config.WORKERS,
-		Delay:       config.REQUEST_DELAY * time.Second,
-		RandomDelay: config.REQUEST_RANDOM_DELAY * time.Second,
-	})
-
-	return c
 }

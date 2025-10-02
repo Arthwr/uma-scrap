@@ -32,7 +32,6 @@ func RunScraper() error {
 	for key, count := range scr.Store().Counts {
 		fmt.Printf("	%s events: %d\n", key.String(), count)
 	}
-
-	fmt.Println("Job done!")
+	fmt.Printf("	Collection count: %d\n", len(scr.Store().Collection))
 	return nil
 }

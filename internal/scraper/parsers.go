@@ -36,25 +36,36 @@ func parseEventRow(el *colly.HTMLElement) (models.Event, error) {
 func parseEventDetails(el *colly.HTMLElement) (models.EventDetails, bool, error) {
 	h3text := strings.TrimSpace(el.Text)
 
-	if h3text != EventHeaderText {
-		// not the section we are looking for
+	switch h3text {
+	case EventChoiceHeader:
+		// Choices & Outcomes
+		return parseChoiceEvent(el)
+	case EventNonChoiceHeader:
+		// No-Choice Event
+		return parseNoChoiceEvent(el)
+	case EventNonChoiceAndOutcomesHeader:
+		// No Choices and Outcomes
+		return parseNoChoiceNoOutcomeEvent()
+	default:
+		// Couldn't locate header
 		return models.EventDetails{}, false, nil
 	}
+}
 
+func parseChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) {
 	table := el.DOM.NextFiltered(SelectorEventTable)
 	if table.Length() == 0 {
-		return models.EventDetails{}, true, fmt.Errorf("no table found after %q", h3text)
+		return models.EventDetails{}, true, fmt.Errorf("no table found after %q", EventChoiceHeader)
 	}
 
 	var details models.EventDetails
-
 	table.Find("tbody tr").Each(func(i int, row *goquery.Selection) {
 		if i == headerRowIndex {
-			return // skip header
+			return // skip headaer
 		}
 
-		label := strings.TrimSpace(row.Find("td:nth-child(1)").Text())
-		reward := extractTextWithBreaks(row.Find("td:nth-child(2)"))
+		label := cleanHTMLTextSingleLine(row.Find("td:nth-child(1)"))
+		reward := cleanHTMLTextWithBreaks(row.Find("td:nth-child(2)"))
 
 		details.Outcomes = append(details.Outcomes, models.Choice{
 			Label:  label,
@@ -65,16 +76,57 @@ func parseEventDetails(el *colly.HTMLElement) (models.EventDetails, bool, error)
 	return details, true, nil
 }
 
-func extractTextWithBreaks(sel *goquery.Selection) string {
-	var sb strings.Builder
+func parseNoChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) {
+	table := el.DOM.NextFiltered(SelectorEventTable)
+	if table.Length() == 0 {
+		return models.EventDetails{}, true, fmt.Errorf("no table found after %q", EventNonChoiceHeader)
+	}
 
-	sel.Contents().Each(func(i int, s *goquery.Selection) {
-		if goquery.NodeName(s) == "br" {
-			sb.WriteString("\n")
-		} else {
-			sb.WriteString(s.Text())
+	reward := cleanHTMLTextWithBreaks(table.Find("tbody tr").Eq(1).Find("td"))
+
+	return models.EventDetails{
+		Outcomes: []models.Choice{{
+			Label:  "No-Choices",
+			Reward: reward,
+		}},
+	}, true, nil
+}
+
+func parseNoChoiceNoOutcomeEvent() (models.EventDetails, bool, error) {
+	return models.EventDetails{
+		Outcomes: []models.Choice{{
+			Label:  "No-Choices",
+			Reward: "This scenario event contains no meaningful choices and does not affect your trainee's stats, mood, condition, or provide any skill hints.",
+		}},
+	}, true, nil
+}
+
+func cleanHTMLTextWithBreaks(s *goquery.Selection) string {
+	clone := s.Clone()
+	clone.Find("br").ReplaceWithHtml("\n")
+	clone.Find("hr").Remove()
+
+	text := clone.Text()
+
+	lines := strings.Split(text, "\n")
+	var cleanLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			cleanLines = append(cleanLines, trimmed)
 		}
-	})
+	}
 
-	return strings.TrimSpace(sb.String())
+	return strings.Join(cleanLines, "\n")
+}
+
+func cleanHTMLTextSingleLine(s *goquery.Selection) string {
+	clone := s.Clone()
+	clone.Find("hr").Remove()
+	clone.Find("br").Remove()
+
+	text := clone.Text()
+	text = strings.Join(strings.Fields(text), " ")
+
+	return text
 }
