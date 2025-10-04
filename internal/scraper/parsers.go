@@ -43,6 +43,9 @@ func parseEventDetails(el *colly.HTMLElement) (models.EventDetails, bool, error)
 	case EventNonChoiceHeader:
 		// No-Choice Event
 		return parseNoChoiceEvent(el)
+	case EventAcupuncturistEventHeader:
+		// Acupuncturist Event
+		return parseAcupuncturistEvent(el)
 	case EventNonChoiceAndOutcomesHeader:
 		// No Choices and Outcomes
 		return parseNoChoiceNoOutcomeEvent()
@@ -55,7 +58,8 @@ func parseEventDetails(el *colly.HTMLElement) (models.EventDetails, bool, error)
 func parseChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) {
 	table := el.DOM.NextFiltered(SelectorEventTable)
 	if table.Length() == 0 {
-		return models.EventDetails{}, true, fmt.Errorf("no table found after %q", EventChoiceHeader)
+		return models.EventDetails{}, true,
+			fmt.Errorf("no table found after %q", EventChoiceHeader)
 	}
 
 	var details models.EventDetails
@@ -79,7 +83,8 @@ func parseChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) 
 func parseNoChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) {
 	table := el.DOM.NextFiltered(SelectorEventTable)
 	if table.Length() == 0 {
-		return models.EventDetails{}, true, fmt.Errorf("no table found after %q", EventNonChoiceHeader)
+		return models.EventDetails{}, true,
+			fmt.Errorf("no table found after %q", EventNonChoiceHeader)
 	}
 
 	reward := cleanHTMLTextWithBreaks(table.Find("tbody tr").Eq(1).Find("td"))
@@ -90,6 +95,31 @@ func parseNoChoiceEvent(el *colly.HTMLElement) (models.EventDetails, bool, error
 			Reward: reward,
 		}},
 	}, true, nil
+}
+
+func parseAcupuncturistEvent(el *colly.HTMLElement) (models.EventDetails, bool, error) {
+	table := el.DOM.NextAllFiltered(SelectorEventTable)
+	if table.Length() == 0 {
+		return models.EventDetails{}, true,
+			fmt.Errorf("no table found after %q", EventAcupuncturistEventHeader)
+	}
+
+	var details models.EventDetails
+	table.Find("tbody tr").Each(func(i int, row *goquery.Selection) {
+		if i == headerRowIndex {
+			return
+		}
+
+		label := cleanHTMLTextSingleLine(row.Find("th"))
+		reward := cleanHTMLTextWithBreaks(row.Find("td"))
+
+		details.Outcomes = append(details.Outcomes, models.Choice{
+			Label:  label,
+			Reward: reward,
+		})
+	})
+
+	return details, true, nil
 }
 
 func parseNoChoiceNoOutcomeEvent() (models.EventDetails, bool, error) {

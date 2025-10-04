@@ -153,6 +153,7 @@ func (s *Scraper) handleEventDetails(el *colly.HTMLElement) {
 	}
 
 	if !found {
+		fmt.Printf("Couldn't locate header for %s\nurl: %s\n", eventName, el.Request.URL.String())
 		return
 	}
 

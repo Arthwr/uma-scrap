@@ -10,4 +10,5 @@ const (
 	EventChoiceHeader               = "Choices and Outcomes"
 	EventNonChoiceHeader            = "No-Choice Event"
 	EventNonChoiceAndOutcomesHeader = "No Choices and Outcomes"
+	EventAcupuncturistEventHeader   = "All Effects and Chances to Succeed"
 )
